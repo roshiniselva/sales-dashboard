@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sales & Revenue Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6fb; color: #1a1a2e; min-height: 100vh; }
+    .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+    .topbar h1 { font-size: 20px; font-weight: 600; }
+    .topbar p { font-size: 13px; color: #64748b; margin-top: 2px; }
+    .filter-row { display: flex; gap: 8px; }
+    .filter-row select { font-size: 13px; padding: 7px 12px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; cursor: pointer; }
+    .dash { padding: 1.5rem 2rem; max-width: 1200px; margin: 0 auto; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+    .kpi { background: #fff; border-radius: 10px; padding: 1.1rem 1.25rem; border: 1px solid #e2e8f0; }
+    .kpi-label { font-size: 12px; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .kpi-value { font-size: 26px; font-weight: 600; }
+    .kpi-badge { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 20px; margin-top: 8px; font-weight: 500; }
+    .badge-up { background: #EAF3DE; color: #3B6D11; }
+    .badge-dn { background: #FCEBEB; color: #A32D2D; }
+    .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; }
+    .card-title { font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; font-size: 12px; color: #64748b; }
+    .legend-item { display: flex; align-items: center; gap: 5px; }
+    .legend-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #e2e8f0; }
+    td { padding: 10px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    .bar-cell { display: flex; align-items: center; gap: 8px; }
+    .mini-bar-bg { flex: 1; height: 6px; background: #f1f5f9; border-radius: 3px; min-width: 60px; }
+    .mini-bar { height: 6px; border-radius: 3px; background: #185FA5; }
+    .rank-badge { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; background: #f1f5f9; color: #64748b; }
+    @media (max-width: 700px) {
+      .topbar { flex-direction: column; align-items: flex-start; gap: 10px; padding: 1rem; }
+      .charts-row { grid-template-columns: 1fr; }
+      .dash { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>Sales & Revenue Dashboard</h1>
+    <p>Real-time KPI tracking and business insights</p>
+  </div>
+  <div class="filter-row">
+    <select id="periodFilter" onchange="updateDashboard()">
+      <option value="Q1">Q1 2024</option>
+      <option value="Q2">Q2 2024</option>
+      <option value="Q3">Q3 2024</option>
+      <option value="Q4" selected>Q4 2024</option>
+    </select>
+    <select id="regionFilter" onchange="updateDashboard()">
+      <option value="all">All Regions</option>
+      <option value="north">North</option>
+      <option value="south">South</option>
+      <option value="east">East</option>
+      <option value="west">West</option>
+    </select>
+  </div>
+</div>
+
+<div class="dash">
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="kpi-label">Total Revenue</div>
+      <div class="kpi-value" id="kpi-rev">$4.82M</div>
+      <span class="kpi-badge badge-up" id="kpi-rev-b">↑ 12.4%</span>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Total Sales</div>
+      <div class="kpi-value" id="kpi-sales">18,340</div>
+      <span class="kpi-badge badge-up" id="kpi-sales-b">↑ 8.1%</span>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Avg Order Value</div>
+      <div class="kpi-value" id="kpi-aov">$263</div>
+      <span class="kpi-badge badge-up" id="kpi-aov-b">↑ 3.9%</span>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Conversion Rate</div>
+      <div class="kpi-value" id="kpi-conv">5.7%</div>
+      <span class="kpi-badge badge-dn" id="kpi-conv-b">↓ 0.4%</span>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-title">Monthly Revenue Trend</div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-swatch" style="background:#185FA5;"></div>Revenue</div>
+        <div class="legend-item"><div class="legend-swatch" style="border: 2px dashed #1D9E75; background:transparent;"></div>Target</div>
+      </div>
+      <div style="position:relative;height:220px;"><canvas id="trendChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Revenue by Category</div>
+      <div class="legend" id="donut-legend"></div>
+      <div style="position:relative;height:220px;"><canvas id="donutChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-title">Regional Performance</div>
+      <div style="position:relative;height:200px;"><canvas id="barChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Top Products</div>
+      <table>
+        <thead><tr><th>#</th><th>Product</th><th>Sales</th><th>Share</th></tr></thead>
+        <tbody id="top-products"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const datasets = {
+  Q4: {
+    rev:'$4.82M',revTrend:'↑ 12.4%',revUp:true,
+    sales:'18,340',salesTrend:'↑ 8.1%',salesUp:true,
+    aov:'$263',aovTrend:'↑ 3.9%',aovUp:true,
+    conv:'5.7%',convTrend:'↓ 0.4%',convUp:false,
+    monthly:[310,295,420,390,460,510,480,540,610,590,650,820],
+    target:[330,330,400,400,450,450,490,490,570,570,620,750],
+    categories:[38,25,18,11,8],regional:[520,430,385,290],
+    products:[{name:'Pro Suite X',sales:4820,pct:38},{name:'Starter Pack',sales:3210,pct:25},{name:'Enterprise Hub',sales:2340,pct:18},{name:'Mobile Core',sales:1430,pct:11},{name:'Analytics Add-on',sales:980,pct:8}]
+  },
+  Q3: {
+    rev:'$4.21M',revTrend:'↑ 7.2%',revUp:true,
+    sales:'16,940',salesTrend:'↑ 5.3%',salesUp:true,
+    aov:'$248',aovTrend:'↑ 1.8%',aovUp:true,
+    conv:'6.1%',convTrend:'↑ 0.2%',convUp:true,
+    monthly:[280,300,320,350,370,400,410,430,470,480,500,440],
+    target:[290,310,330,360,380,410,410,430,460,470,490,450],
+    categories:[34,27,20,12,7],regional:[470,400,340,260],
+    products:[{name:'Pro Suite X',sales:4320,pct:34},{name:'Starter Pack',sales:3430,pct:27},{name:'Enterprise Hub',sales:2540,pct:20},{name:'Mobile Core',sales:1530,pct:12},{name:'Analytics Add-on',sales:890,pct:7}]
+  },
+  Q2: {
+    rev:'$3.97M',revTrend:'↑ 4.8%',revUp:true,
+    sales:'15,610',salesTrend:'↑ 3.1%',salesUp:true,
+    aov:'$254',aovTrend:'↑ 2.1%',aovUp:true,
+    conv:'5.9%',convTrend:'↓ 0.1%',convUp:false,
+    monthly:[250,260,290,310,330,360,370,390,400,410,430,400],
+    target:[270,280,300,320,340,360,370,380,400,410,420,410],
+    categories:[36,24,19,13,8],regional:[440,380,310,240],
+    products:[{name:'Pro Suite X',sales:4010,pct:36},{name:'Starter Pack',sales:2680,pct:24},{name:'Enterprise Hub',sales:2120,pct:19},{name:'Mobile Core',sales:1450,pct:13},{name:'Analytics Add-on',sales:890,pct:8}]
+  },
+  Q1: {
+    rev:'$3.56M',revTrend:'↓ 1.2%',revUp:false,
+    sales:'14,110',salesTrend:'↓ 0.8%',salesUp:false,
+    aov:'$252',aovTrend:'↑ 0.5%',aovUp:true,
+    conv:'5.5%',convTrend:'↓ 0.6%',convUp:false,
+    monthly:[200,210,240,260,280,310,320,330,350,360,380,360],
+    target:[230,240,260,280,300,320,330,340,360,370,380,370],
+    categories:[33,26,21,12,8],regional:[400,350,280,210],
+    products:[{name:'Pro Suite X',sales:3550,pct:33},{name:'Starter Pack',sales:2800,pct:26},{name:'Enterprise Hub',sales:2260,pct:21},{name:'Mobile Core',sales:1290,pct:12},{name:'Analytics Add-on',sales:860,pct:8}]
+  }
+};
+
+const catColors=['#185FA5','#1D9E75','#D85A30','#BA7517','#993556'];
+const catLabels=['Software','Hardware','Services','Subscriptions','Accessories'];
+const regionLabels=['North','South','East','West'];
+let trendChart,donutChart,barChart;
+
+function updateDashboard(){
+  const period=document.getElementById('periodFilter').value;
+  const d=datasets[period];
+  document.getElementById('kpi-rev').textContent=d.rev;
+  document.getElementById('kpi-rev-b').textContent=d.revTrend;
+  document.getElementById('kpi-rev-b').className='kpi-badge '+(d.revUp?'badge-up':'badge-dn');
+  document.getElementById('kpi-sales').textContent=d.sales;
+  document.getElementById('kpi-sales-b').textContent=d.salesTrend;
+  document.getElementById('kpi-sales-b').className='kpi-badge '+(d.salesUp?'badge-up':'badge-dn');
+  document.getElementById('kpi-aov').textContent=d.aov;
+  document.getElementById('kpi-aov-b').textContent=d.aovTrend;
+  document.getElementById('kpi-aov-b').className='kpi-badge '+(d.aovUp?'badge-up':'badge-dn');
+  document.getElementById('kpi-conv').textContent=d.conv;
+  document.getElementById('kpi-conv-b').textContent=d.convTrend;
+  document.getElementById('kpi-conv-b').className='kpi-badge '+(d.convUp?'badge-up':'badge-dn');
+  trendChart.data.datasets[0].data=d.monthly;
+  trendChart.data.datasets[1].data=d.target;
+  trendChart.update();
+  donutChart.data.datasets[0].data=d.categories;
+  donutChart.update();
+  barChart.data.datasets[0].data=d.regional;
+  barChart.update();
+  document.getElementById('top-products').innerHTML=d.products.map((p,i)=>`
+    <tr>
+      <td><div class="rank-badge">${i+1}</div></td>
+      <td>${p.name}</td>
+      <td>${p.sales.toLocaleString()}</td>
+      <td><div class="bar-cell"><div class="mini-bar-bg"><div class="mini-bar" style="width:${p.pct}%"></div></div><span style="font-size:12px;color:#64748b;min-width:28px">${p.pct}%</span></div></td>
+    </tr>`).join('');
+}
+
+const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const d0=datasets['Q4'];
+
+trendChart=new Chart(document.getElementById('trendChart'),{
+  type:'line',
+  data:{labels:months,datasets:[
+    {label:'Revenue',data:d0.monthly,borderColor:'#185FA5',backgroundColor:'rgba(24,95,165,0.08)',fill:true,tension:0.4,pointRadius:3,pointBackgroundColor:'#185FA5',borderWidth:2},
+    {label:'Target',data:d0.target,borderColor:'#1D9E75',borderDash:[5,4],backgroundColor:'transparent',tension:0.4,pointRadius:0,borderWidth:1.5}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'$'+Math.round(v/100)*100/1000+'k',font:{size:11}},grid:{color:'rgba(0,0,0,0.05)'}},x:{ticks:{font:{size:11}},grid:{display:false}}}}
+});
+
+document.getElementById('donut-legend').innerHTML=catLabels.map((l,i)=>`<div class="legend-item"><div class="legend-swatch" style="background:${catColors[i]}"></div>${l} ${d0.categories[i]}%</div>`).join('');
+
+donutChart=new Chart(document.getElementById('donutChart'),{
+  type:'doughnut',
+  data:{labels:catLabels,datasets:[{data:d0.categories,backgroundColor:catColors,borderWidth:2,borderColor:'#fff',hoverOffset:6}]},
+  options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false}}}
+});
+
+barChart=new Chart(document.getElementById('barChart'),{
+  type:'bar',
+  data:{labels:regionLabels,datasets:[{label:'Sales ($K)',data:d0.regional,backgroundColor:['#185FA5','#1D9E75','#D85A30','#BA7517'],borderRadius:4,borderSkipped:false}]},
+  options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>'$'+v+'K',font:{size:11}},grid:{color:'rgba(0,0,0,0.05)'}},y:{ticks:{font:{size:12}},grid:{display:false}}}}
+});
+
+updateDashboard();
+</script>
+</body>
+</html>
